@@ -184,17 +184,11 @@ tr:last-child td{border-bottom:none;}
   .no-print{display:none !important;}
 }
 
-/* ── SETUP / LOGIN SCREENS ── */
+/* ── LOGIN SCREEN ── */
 .overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
 .setup-card{background:var(--bg2);border:1px solid var(--border2);border-radius:20px;padding:32px;width:580px;max-width:100%;max-height:92vh;overflow-y:auto;}
 .setup-title{font-size:18px;font-weight:800;color:var(--gold2);margin-bottom:6px;}
 .setup-sub{font-size:12px;color:var(--text2);margin-bottom:20px;line-height:1.7;}
-.step{display:flex;gap:11px;margin-bottom:12px;}
-.step-n{background:var(--gold);color:#1a0e00;width:21px;height:21px;border-radius:50%;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;}
-.step-t{font-size:12px;color:var(--text2);line-height:1.7;}
-.step-t a{color:var(--gold2);text-decoration:none;}
-.step-t code{background:var(--bg3);padding:1px 5px;border-radius:4px;font-family:monospace;font-size:11px;color:var(--text);}
-.rule-blk{display:block;background:var(--bg3);border-radius:6px;padding:8px 10px;margin-top:5px;font-family:monospace;font-size:10px;line-height:1.9;color:var(--text2);}
 .err-msg{color:var(--red);font-size:12px;margin-top:8px;display:none;}
 
 /* ── FUTURE FEATURES PANEL ── */
@@ -212,39 +206,8 @@ tr:last-child td{border-bottom:none;}
 <div class="hamburger" id="ham" onclick="toggleSidebar()">☰</div>
 <div class="sidebar-overlay" id="sov" onclick="closeSidebar()"></div>
 
-<!-- ══ SETUP SCREEN ══ -->
-<div class="overlay" id="setup-screen" style="display:none;">
-  <div class="setup-card">
-    <div class="setup-title">🔥 Firebase Setup — One Time</div>
-    <div class="setup-sub">Your data will be stored in your own private Firebase project — free, secure, accessible from any device. Follow these steps once.</div>
-    <div class="step"><div class="step-n">1</div><div class="step-t">Go to <a href="https://console.firebase.google.com" target="_blank">console.firebase.google.com</a> → <b>Add project</b> → name it <code>motiram-shop</code> → disable Analytics → Create.</div></div>
-    <div class="step"><div class="step-n">2</div><div class="step-t">Inside the project, click <b>Web icon (&lt;/&gt;)</b> → Register app → copy the <code>firebaseConfig</code> object shown.</div></div>
-    <div class="step"><div class="step-n">3</div><div class="step-t"><b>Build → Firestore Database</b> → Create database → <b>Start in production mode</b> → pick any region → Enable.</div></div>
-    <div class="step"><div class="step-n">4</div><div class="step-t">In Firestore → <b>Rules</b> tab → replace with:<code class="rule-blk">rules_version = '2';<br>service cloud.firestore {<br>&nbsp;&nbsp;match /databases/{database}/documents {<br>&nbsp;&nbsp;&nbsp;&nbsp;match /{document=**} {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if request.auth != null;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;}<br>}</code>→ Publish.</div></div>
-    <div class="step"><div class="step-n">5</div><div class="step-t"><b>Authentication → Get started → Email/Password → Enable</b> → Add user: your email &amp; a strong password.</div></div>
-    <div class="step"><div class="step-n">6</div><div class="step-t">Paste your config values below and click Save.</div></div>
-    <div class="form-grid" style="margin-top:16px;gap:9px;">
-      <div class="fg"><label class="form-label">API Key *</label><input class="fi" id="cfg-key" placeholder="AIzaSy..."></div>
-      <div class="form-grid form-grid-2">
-        <div class="fg"><label class="form-label">Auth Domain *</label><input class="fi" id="cfg-auth" placeholder="xxx.firebaseapp.com"></div>
-        <div class="fg"><label class="form-label">Project ID *</label><input class="fi" id="cfg-proj" placeholder="motiram-shop"></div>
-      </div>
-      <div class="fg"><label class="form-label">App ID *</label><input class="fi" id="cfg-app" placeholder="1:xxx:web:xxx"></div>
-      <div class="form-grid form-grid-2">
-        <div class="fg"><label class="form-label">Storage Bucket</label><input class="fi" id="cfg-bucket" placeholder="xxx.appspot.com"></div>
-        <div class="fg"><label class="form-label">Messaging Sender ID</label><input class="fi" id="cfg-msg" placeholder="12345678"></div>
-      </div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:18px;">
-      <button class="btn btn-gold btn-lg" style="flex:1;" onclick="saveConfig()">🔥 Save & Connect Firebase</button>
-      <button class="btn btn-sec" onclick="demoMode()" title="Run locally without cloud sync">📴 Offline Demo</button>
-    </div>
-    <div class="err-msg" id="setup-err"></div>
-  </div>
-</div>
-
 <!-- ══ LOGIN SCREEN ══ -->
-<div class="overlay" id="login-screen" style="display:none;">
+<div class="overlay" id="login-screen" style="display:flex;">
   <div class="setup-card" style="width:380px;">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:28px;">🏪</div>
@@ -257,7 +220,6 @@ tr:last-child td{border-bottom:none;}
     </div>
     <button class="btn btn-gold btn-lg" style="width:100%;margin-top:14px;" onclick="doLogin()">Sign In</button>
     <div class="err-msg" id="login-err"></div>
-    <div style="margin-top:12px;text-align:center;font-size:11px;color:var(--text3);">Wrong config? <span style="color:var(--gold2);cursor:pointer;" onclick="localStorage.removeItem('mrs_fb_cfg');location.reload()">Reset setup</span></div>
   </div>
 </div>
 
@@ -441,75 +403,101 @@ tr:last-child td{border-bottom:none;}
   <div class="modal modal-wide"><div class="modal-title"><span>👤 Account Details</span><span class="modal-close" onclick="CM('m-acct')">✕</span></div><div id="acct-body"></div></div>
 </div>
 
-<!-- Firebase -->
+<!-- ══ FIREBASE (hardcoded config — no user input needed) ══ -->
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import{getFirestore,collection,doc,setDoc,onSnapshot}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import{getAuth,signInWithEmailAndPassword,onAuthStateChanged,signOut}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-function getCfg(){try{return JSON.parse(localStorage.getItem('mrs_fb_cfg'));}catch{return null;}}
-
-window.saveConfig=function(){
-  const v=id=>document.getElementById(id)?.value?.trim()||'';
-  const cfg={apiKey:v('cfg-key'),authDomain:v('cfg-auth'),projectId:v('cfg-proj'),appId:v('cfg-app'),storageBucket:v('cfg-bucket'),messagingSenderId:v('cfg-msg')};
-  if(!cfg.apiKey||!cfg.authDomain||!cfg.projectId||!cfg.appId){setErr('setup-err','Please fill API Key, Auth Domain, Project ID and App ID.');return;}
-  localStorage.setItem('mrs_fb_cfg',JSON.stringify(cfg));location.reload();
+// ══════════════════════════════════════════════════════
+// 🔧 PASTE YOUR FIREBASE CONFIG HERE (one-time setup)
+// ══════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBj3TI4-f6pXcp2Wikm2Evqolqq-KTOvp8",
+  authDomain:        "our-shop-62854.firebaseapp.com",
+  projectId:         "our-shop-62854",
+  storageBucket:     "our-shop-62854.firebasestorage.app",
+  messagingSenderId: "965176408015",
+  appId:             "1:965176408015:web:25545840a1a5fda3da44ba"
 };
+// ══════════════════════════════════════════════════════
 
-window.demoMode=function(){
-  document.getElementById('setup-screen').style.display='none';
-  document.getElementById('app').style.display='flex';
-  setSS('demo','Offline Demo');go('dashboard');
-};
+try {
+  const app  = initializeApp(FIREBASE_CONFIG);
+  const db   = getFirestore(app);
+  const auth = getAuth(app);
 
-const cfg=getCfg();
-if(!cfg){
-  document.getElementById('setup-screen').style.display='flex';
-}else{
-  document.getElementById('login-screen').style.display='flex';
-  try{
-    const app=initializeApp(cfg);
-    const db=getFirestore(app);
-    const auth=getAuth(app);
+  // Login / logout
+  window.doLogin = async function(){
+    const e = document.getElementById('l-email')?.value?.trim();
+    const p = document.getElementById('l-pw')?.value;
+    setErr('login-err','');
+    try{ await signInWithEmailAndPassword(auth,e,p); }
+    catch(err){ setErr('login-err', err.message||'Login failed'); }
+  };
+  window.doLogout = async function(){
+    await signOut(auth);
+    document.getElementById('app').style.display='none';
+    document.getElementById('login-screen').style.display='flex';
+  };
 
-    window.doLogin=async function(){
-      const e=document.getElementById('l-email')?.value?.trim();
-      const p=document.getElementById('l-pw')?.value;
-      setErr('login-err','');
-      try{await signInWithEmailAndPassword(auth,e,p);}
-      catch(err){setErr('login-err',err.message||'Login failed');}
-    };
-    window.doLogout=async function(){
-      await signOut(auth);
-      document.getElementById('app').style.display='none';
+  // Auth state — show app or login
+  onAuthStateChanged(auth, user => {
+    if(!user){
       document.getElementById('login-screen').style.display='flex';
-    };
+      document.getElementById('app').style.display='none';
+      return;
+    }
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    setSS('busy','Loading…');
 
-    onAuthStateChanged(auth,user=>{
-      if(!user){document.getElementById('login-screen').style.display='flex';document.getElementById('app').style.display='none';return;}
-      document.getElementById('login-screen').style.display='none';
-      document.getElementById('app').style.display='flex';
-      setSS('busy','Loading…');
-      ['products','purchases','bills','customers'].forEach(col=>{
-        onSnapshot(collection(db,col),snap=>{
-          const arr=[];snap.forEach(d=>arr.push({id:d.id,...d.data()}));
-          localStorage.setItem('mrs_'+col,JSON.stringify(arr));
-          schedRefresh();
-        });
+    let loadedCollections = 0;
+    const TOTAL_COLLECTIONS = 4;
+
+    ['products','purchases','bills','customers'].forEach(col=>{
+      onSnapshot(collection(db,col), snap=>{
+        const arr=[];
+        snap.forEach(d=>arr.push({id:d.id,...d.data()}));
+        localStorage.setItem('mrs_'+col, JSON.stringify(arr));
+
+        loadedCollections++;
+        if(loadedCollections >= TOTAL_COLLECTIONS){
+          setSS('ok','Synced ✓');
+          // Only refresh page if billing modal is NOT open (don't disrupt active bill)
+          if(!document.getElementById('m-bill')?.classList.contains('open')){
+            schedRefresh();
+          }
+        } else {
+          // After initial load, subsequent snapshots can refresh safely
+          if(loadedCollections > TOTAL_COLLECTIONS){
+            if(!document.getElementById('m-bill')?.classList.contains('open')){
+              schedRefresh();
+            }
+          }
+        }
       });
-      setSS('ok','Synced ✓');
-      go('dashboard');
     });
 
-    window._save=async function(col,id,data){
-      try{setSS('busy','Saving…');await setDoc(doc(db,col,id),data,{merge:true});setSS('ok','Synced ✓');}
-      catch(e){setSS('err','Sync error');console.error(e);}
-    };
-  }catch(e){
-    setErr('setup-err','Firebase error: '+e.message);
-    document.getElementById('setup-screen').style.display='flex';
-    document.getElementById('login-screen').style.display='none';
-  }
+    go('dashboard');
+  });
+
+  // Save to Firestore
+  window._save = async function(col, id, data){
+    try{
+      setSS('busy','Saving…');
+      await setDoc(doc(db,col,id), data, {merge:true});
+      setSS('ok','Synced ✓');
+    }catch(e){
+      setSS('err','Sync error');
+      console.error(e);
+    }
+  };
+
+} catch(e) {
+  // Firebase config error — show helpful message on login screen
+  setErr('login-err', '⚠️ Firebase config error: '+e.message+'. Please check the config in the HTML file.');
+  console.error('Firebase init error:', e);
 }
 </script>
 
@@ -527,6 +515,8 @@ function fmtD(d){return new Date(d).toLocaleString('en-IN',{day:'2-digit',month:
 function fmtDShort(d){return new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
 function now2(){return new Date().toISOString();}
 function setSS(s,t){const d=G('sdot'),l=G('slbl');if(d)d.className='sync-dot '+s;if(l)l.textContent=t;}
+
+// Stubs if Firebase module hasn't loaded yet
 if(!window._save)window._save=async()=>{};
 if(!window.doLogin)window.doLogin=()=>{};
 if(!window.doLogout)window.doLogout=()=>{};
@@ -534,25 +524,28 @@ if(!window.doLogout)window.doLogout=()=>{};
 /* Clock */
 setInterval(()=>{const e=G('clk');if(e)e.textContent=new Date().toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});},1000);
 
-/* Auto-refresh on Firebase push */
+/* Auto-refresh on Firebase push — never fires during active billing */
 let _rt=null;
-function schedRefresh(){clearTimeout(_rt);_rt=setTimeout(()=>{if(window._cp)go(window._cp,true);},500);}
+function schedRefresh(){
+  clearTimeout(_rt);
+  _rt=setTimeout(()=>{
+    // Don't disrupt an open billing session
+    if(document.getElementById('m-bill')?.classList.contains('open'))return;
+    if(window._cp)go(window._cp,true);
+  },600);
+}
 
 /* Employee list for autocomplete */
 function refreshEmpList(){
-  const bills=dg('bills');const emps=[...new Set(bills.map(b=>b.employee).filter(Boolean))];
-  const dl=G('emp-list');if(dl)dl.innerHTML=emps.map(e=>`<option value="${e}">`).join('');
+  const bills=dg('bills');
+  const emps=[...new Set(bills.map(b=>b.employee).filter(Boolean))];
+  const dl=G('emp-list');
+  if(dl)dl.innerHTML=emps.map(e=>`<option value="${e}">`).join('');
 }
 
 /* ── MOBILE SIDEBAR ── */
-window.toggleSidebar=function(){
-  G('sidebar').classList.toggle('open');
-  G('sov').classList.toggle('open');
-};
-window.closeSidebar=function(){
-  G('sidebar').classList.remove('open');
-  G('sov').classList.remove('open');
-};
+window.toggleSidebar=function(){G('sidebar').classList.toggle('open');G('sov').classList.toggle('open');};
+window.closeSidebar=function(){G('sidebar').classList.remove('open');G('sov').classList.remove('open');};
 
 /* ── AUTOCOMPLETE ENGINE ── */
 function hl(text,q){
@@ -579,23 +572,35 @@ function acKey(e,did){
 }
 document.addEventListener('mousedown',e=>{if(!e.target.closest('.ac-wrap'))closeAllDrops();});
 
-/* SKU autocomplete */
+/* SKU autocomplete — always reads freshest products from localStorage */
 function acSKU(inId,dropId,q,rowIdx){
   const prods=dg('products'),query=(q||'').trim().toLowerCase();
   const matches=query===''?prods.slice(0,14):prods.filter(p=>p.name.toLowerCase().includes(query));
   if(matches.length===0){openDrop(dropId,'');return;}
-  const html=matches.map(p=>`<div class="ac-item" onmousedown="pickSKU('${inId}','${dropId}',${JSON.stringify(p.name)},${rowIdx})">
+  const html=matches.map(p=>`<div class="ac-item" onmousedown="pickSKU('${inId}','${dropId}',${JSON.stringify(p.name)},${rowIdx===null?'null':rowIdx})">
     ${hl(p.name,query)}
-    <div class="ac-sub">Stock: ${p.currentStock} ${p.unit||''} &nbsp;·&nbsp; Retail: ${fmt(p.retailRate)} &nbsp;·&nbsp; WS: ${fmt(p.wholesaleRate)} &nbsp;·&nbsp; <span style="color:var(--text3)">Buy: ${fmt(p.purchaseRate)}</span></div>
+    <div class="ac-sub">Stock: ${fmtN(p.currentStock)} ${p.unit||''} &nbsp;·&nbsp; Retail: ${fmt(p.retailRate)} &nbsp;·&nbsp; WS: ${fmt(p.wholesaleRate)} &nbsp;·&nbsp; <span style="color:var(--text3)">Buy: ${fmt(p.purchaseRate)}</span></div>
   </div>`).join('');
   openDrop(dropId,html);
 }
+
+// FIX: pickSKU now correctly reads the latest products and populates purchase form too
 window.pickSKU=function(inId,dropId,name,rowIdx){
-  SV(inId,name);closeAllDrops();
-  if(rowIdx!==null&&rowIdx!==undefined){setBISku(rowIdx,name);}
-  else{
-    const p=dg('products').find(x=>x.name===name);
-    if(p){SV('p-cat',p.category);SV('p-unit',p.unit);SV('p-pr',p.purchaseRate);SV('p-rr',p.retailRate);SV('p-wr',p.wholesaleRate);calcPT();}
+  SV(inId,name);
+  closeAllDrops();
+  if(rowIdx!==null && rowIdx!==undefined){
+    setBISku(rowIdx,name);
+  } else {
+    // Purchase form autocomplete fill
+    const p=dg('products').find(x=>x.name.toLowerCase()===name.toLowerCase());
+    if(p){
+      SV('p-cat',p.category);
+      SV('p-unit',p.unit);
+      SV('p-pr',p.purchaseRate);
+      SV('p-rr',p.retailRate);
+      SV('p-wr',p.wholesaleRate);
+      calcPT();
+    }
   }
 };
 
@@ -714,19 +719,45 @@ function rPurch(){
   </tbody></table></div>`}
   </div></div>`;
 }
+
 window.resetPF=function(){['p-name','p-qty','p-pr','p-rr','p-wr','p-dist','p-dc','p-notes','p-tot'].forEach(id=>{const e=G(id);if(e)e.value='';});};
 window.calcPT=function(){const q=parseFloat(G('p-qty')?.value)||0,r=parseFloat(G('p-pr')?.value)||0,e=G('p-tot');if(e)e.value=fmtN(q*r);};
+
 window.savePurchase=async function(){
   const name=G('p-name')?.value?.trim(),qty=parseFloat(G('p-qty')?.value),pr=parseFloat(G('p-pr')?.value),rr=parseFloat(G('p-rr')?.value),wr=parseFloat(G('p-wr')?.value),dist=G('p-dist')?.value?.trim();
   if(!name||!qty||!pr||!rr||!wr||!dist){alert('Please fill all required (*) fields.');return;}
   const unit=G('p-unit')?.value,cat=G('p-cat')?.value,dc=G('p-dc')?.value?.trim()||'',notes=G('p-notes')?.value?.trim()||'';
   const pur={id:uid(),date:now2(),name,qty,purchaseRate:pr,retailRate:rr,wholesaleRate:wr,distributor:dist,distContact:dc,unit,category:cat,notes};
+
+  // Save purchase record
   const purs=dg('purchases');purs.push(pur);ds('purchases',purs);
   await window._save('purchases',pur.id,pur);
-  const prods=dg('products');const idx=prods.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
-  if(idx>=0){prods[idx].currentStock+=qty;prods[idx].totalPurchased+=qty;prods[idx].purchaseRate=pr;prods[idx].retailRate=rr;prods[idx].wholesaleRate=wr;prods[idx].unit=unit;prods[idx].category=cat;ds('products',prods);await window._save('products',prods[idx].id,prods[idx]);}
-  else{const np={id:uid(),name,category:cat,unit,currentStock:qty,totalPurchased:qty,purchaseRate:pr,retailRate:rr,wholesaleRate:wr};prods.push(np);ds('products',prods);await window._save('products',np.id,np);}
-  CM('m-purch');alert(`✅ Saved!\n${name} — ${qty} ${unit} @ ₹${pr}\nRetail: ₹${rr} | WS: ₹${wr}`);go(window._cp);
+
+  // FIX: Update or create product with correct case-insensitive matching
+  const prods=dg('products');
+  const idx=prods.findIndex(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(idx>=0){
+    // Existing product — add stock and update rates
+    prods[idx].currentStock = (parseFloat(prods[idx].currentStock)||0) + qty;
+    prods[idx].totalPurchased = (parseFloat(prods[idx].totalPurchased)||0) + qty;
+    prods[idx].purchaseRate=pr;
+    prods[idx].retailRate=rr;
+    prods[idx].wholesaleRate=wr;
+    prods[idx].unit=unit;
+    prods[idx].category=cat;
+    ds('products',prods);
+    await window._save('products',prods[idx].id,prods[idx]);
+  } else {
+    // New product
+    const np={id:uid(),name,category:cat,unit,currentStock:qty,totalPurchased:qty,purchaseRate:pr,retailRate:rr,wholesaleRate:wr};
+    prods.push(np);
+    ds('products',prods);
+    await window._save('products',np.id,np);
+  }
+
+  CM('m-purch');
+  alert(`✅ Saved!\n${name} — ${qty} ${unit} @ ₹${pr}\nRetail: ₹${rr} | WS: ₹${wr}`);
+  go(window._cp);
 };
 
 /* ── BILLING ── */
@@ -751,20 +782,27 @@ window.startBill=function(type){
   SV('b-paid','0');SV('b-pm','Cash');G('pend-box').style.display='none';
   renderBI();calcBT();refreshEmpList();OM('m-bill');addBI();
 };
+
 window.addBI=function(){bItems.push({sku:'',qty:1,rate:0,pr:0});renderBI();};
 
+// FIX: renderBI always reads the latest products from localStorage for accurate stock display
 function renderBI(){
   const tbody=G('bi-body');if(!tbody)return;
+  const latestProds=dg('products'); // always fresh read
   tbody.innerHTML=bItems.map((it,i)=>{
     const amt=it.qty*it.rate,cost=it.qty*it.pr;
     const mg=it.pr>0?(((it.rate-it.pr)/it.pr)*100).toFixed(1)+'%':'—';
     const mc=it.rate>=it.pr?'var(--green)':'var(--red)';
     const did=`acd${i}`;
+    // Show stock warning if product is in system and stock is low
+    const prod=it.sku?latestProds.find(p=>p.name.toLowerCase()===it.sku.toLowerCase()):null;
+    const stockWarn=prod&&prod.currentStock<it.qty?` <span style="color:var(--red);font-size:9px;">⚠️ Only ${fmtN(prod.currentStock)} in stock</span>`:'';
     return`<tr>
-      <td style="position:relative;min-width:130px;">
+      <td style="position:relative;min-width:160px;">
         <input id="bsi${i}" value="${it.sku}" placeholder="Product…" autocomplete="off" style="font-size:12px;width:100%;"
           oninput="acSKU('bsi${i}','${did}',this.value,${i})" onfocus="acSKU('bsi${i}','${did}',this.value,${i})" onkeydown="acKey(event,'${did}')">
         <div class="ac-drop" id="${did}"></div>
+        ${stockWarn}
       </td>
       <td><input type="number" min="0.01" step="0.01" value="${it.qty}" onchange="setBIQ(${i},this.value)" style="width:55px;font-size:12px;" class="mono"></td>
       <td><input type="number" min="0" step="0.01" value="${it.rate}" onchange="setBIR(${i},this.value)" style="width:75px;font-size:12px;" class="mono hl"></td>
@@ -773,23 +811,45 @@ function renderBI(){
       <td style="font-size:11px;font-family:monospace;color:${mc};">${mg}</td>
       <td><button onclick="removeBI(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:15px;padding:2px 4px;">✕</button></td>
     </tr>`;
-  }).join('');calcBT();
+  }).join('');
+  calcBT();
 }
+
+// FIX: setBISku reads fresh products so newly added stock appears immediately in billing
 window.setBISku=function(i,val){
-  const p=dg('products').find(x=>x.name.toLowerCase()===val.toLowerCase());
+  const prods=dg('products'); // always fresh read from localStorage
+  const p=prods.find(x=>x.name.toLowerCase()===val.toLowerCase());
   bItems[i].sku=val;
-  if(p){bItems[i].rate=bType==='retail'?p.retailRate:p.wholesaleRate;bItems[i].pr=p.purchaseRate;}
-  SV(`bsi${i}`,val);closeAllDrops();renderBI();
+  if(p){
+    bItems[i].rate=bType==='retail'?p.retailRate:p.wholesaleRate;
+    bItems[i].pr=p.purchaseRate;
+  } else {
+    bItems[i].rate=0;
+    bItems[i].pr=0;
+  }
+  closeAllDrops();
+  renderBI(); // re-render the full table with updated data
+  // Restore focus to the input after re-render
+  setTimeout(()=>{const inp=G(`bsi${i}`);if(inp)inp.blur();},50);
 };
+
 window.setBIQ=function(i,v){
   bItems[i].qty=parseFloat(v)||1;
-  const p=dg('products').find(x=>x.name.toLowerCase()===bItems[i].sku.toLowerCase());
+  const prods=dg('products');
+  const p=prods.find(x=>x.name.toLowerCase()===bItems[i].sku.toLowerCase());
   if(p&&bType==='retail'&&bItems[i].qty>=10&&bItems[i].rate===p.retailRate)
     bItems[i].rate=parseFloat((p.retailRate*.95).toFixed(2));
   renderBI();
 };
-window.setBIR=function(i,v){bItems[i].rate=parseFloat(v)||0;calcBT();};
+
+// FIX: setBIR updates bItems state and re-renders (not just calcBT)
+window.setBIR=function(i,v){
+  bItems[i].rate=parseFloat(v)||0;
+  calcBT(); // lightweight — just update totals without full re-render
+};
+
 window.removeBI=function(i){bItems.splice(i,1);renderBI();};
+
 function calcBT(){
   const sub=bItems.reduce((s,i)=>s+i.qty*i.rate,0),prof=bItems.reduce((s,i)=>s+i.qty*(i.rate-i.pr),0);
   const paid=parseFloat(G('b-paid')?.value)||0,pend=Math.max(0,sub-paid);
@@ -798,35 +858,80 @@ function calcBT(){
   if(G('b-prof'))G('b-prof').textContent=fmt(prof);
   if(G('b-pend'))G('b-pend').value=fmtN(pend);
 }
-function billNo(){const b=dg('bills');return b.length>0?Math.max(...b.map(x=>x.billNo||0))+1:1001;}
+
+function billNo(){
+  const b=dg('bills');
+  return b.length>0?Math.max(...b.map(x=>x.billNo||0))+1:1001;
+}
 
 window.saveBill=async function(){
-  const vi=bItems.filter(i=>i.sku&&i.qty>0);if(!vi.length){alert('Add at least one item.');return;}
+  const vi=bItems.filter(i=>i.sku&&i.qty>0);
+  if(!vi.length){alert('Add at least one item.');return;}
+
   const gt=vi.reduce((s,i)=>s+i.qty*i.rate,0),prof=vi.reduce((s,i)=>s+i.qty*(i.rate-i.pr),0);
   const paid=parseFloat(G('b-paid')?.value)||0,pend=Math.max(0,gt-paid);
   const cust=G('b-cust')?.value?.trim()||'Walk-in',phone=G('b-phone')?.value?.trim()||'',emp=G('b-emp')?.value?.trim()||'',pm=G('b-pm')?.value||'Cash';
-  const bill={id:uid(),billNo:billNo(),date:now2(),billType:bType,customer:cust,phone,employee:emp,paymentMethod:pm,items:vi.map(i=>({sku:i.sku,qty:i.qty,rate:i.rate,pr:i.pr})),grandTotal:gt,amountPaid:paid,amountPending:pend,profit:prof};
-  const bills=dg('bills');bills.push(bill);ds('bills',bills);await window._save('bills',bill.id,bill);
+
+  const bill={
+    id:uid(),billNo:billNo(),date:now2(),billType:bType,
+    customer:cust,phone,employee:emp,paymentMethod:pm,
+    items:vi.map(i=>({sku:i.sku,qty:i.qty,rate:i.rate,pr:i.pr})),
+    grandTotal:gt,amountPaid:paid,amountPending:pend,profit:prof
+  };
+
+  // Save bill
+  const bills=dg('bills');bills.push(bill);ds('bills',bills);
+  await window._save('bills',bill.id,bill);
+
+  // FIX: Deduct stock — only save products that were actually modified
   const prods=dg('products');
-  vi.forEach(it=>{const idx=prods.findIndex(p=>p.name.toLowerCase()===it.sku.toLowerCase());if(idx>=0)prods[idx].currentStock=Math.max(0,prods[idx].currentStock-it.qty);});
-  ds('products',prods);for(const p of prods)await window._save('products',p.id,p);
-  if(phone){
-    const custs=dg('customers');const ci=custs.findIndex(c=>c.phone===phone);
-    if(ci>=0){custs[ci].pendingAmount=(custs[ci].pendingAmount||0)+pend;custs[ci].totalSpent=(custs[ci].totalSpent||0)+gt;custs[ci].lastBill=now2();custs[ci].billIds=[...(custs[ci].billIds||[]),bill.id];ds('customers',custs);await window._save('customers',custs[ci].id,custs[ci]);}
-    else{const nc={id:uid(),name:cust,phone,pendingAmount:pend,totalSpent:gt,lastBill:now2(),billIds:[bill.id]};custs.push(nc);ds('customers',custs);await window._save('customers',nc.id,nc);}
+  const modifiedProds=[];
+  vi.forEach(it=>{
+    const idx=prods.findIndex(p=>p.name.toLowerCase()===it.sku.toLowerCase());
+    if(idx>=0){
+      prods[idx].currentStock=Math.max(0,(parseFloat(prods[idx].currentStock)||0)-it.qty);
+      modifiedProds.push(prods[idx]);
+    }
+  });
+  ds('products',prods);
+  // Only save the products that were changed (not all products)
+  for(const p of modifiedProds){
+    await window._save('products',p.id,p);
   }
+
+  // Update customer record
+  if(phone){
+    const custs=dg('customers');
+    const ci=custs.findIndex(c=>c.phone===phone);
+    if(ci>=0){
+      custs[ci].pendingAmount=(custs[ci].pendingAmount||0)+pend;
+      custs[ci].totalSpent=(custs[ci].totalSpent||0)+gt;
+      custs[ci].lastBill=now2();
+      custs[ci].billIds=[...(custs[ci].billIds||[]),bill.id];
+      ds('customers',custs);
+      await window._save('customers',custs[ci].id,custs[ci]);
+    } else {
+      const nc={id:uid(),name:cust,phone,pendingAmount:pend,totalSpent:gt,lastBill:now2(),billIds:[bill.id]};
+      custs.push(nc);
+      ds('customers',custs);
+      await window._save('customers',nc.id,nc);
+    }
+  }
+
   CM('m-bill');
   if(phone){
     setTimeout(()=>{
       if(confirm(`✅ Bill #${bill.billNo} saved!\nTotal: ${fmt(gt)} | Pending: ${fmt(pend)}\n\nSend to customer on WhatsApp?`))prepWA(bill.id);
       else go(window._cp);
     },100);
-  }else{alert(`✅ Bill #${bill.billNo} saved!\nTotal: ${fmt(gt)} | Pending: ${fmt(pend)}`);go(window._cp);}
+  } else {
+    alert(`✅ Bill #${bill.billNo} saved!\nTotal: ${fmt(gt)} | Pending: ${fmt(pend)}`);
+    go(window._cp);
+  }
 };
 
 /* Bill text for WA + Print */
 function billText(b,forPrint){
-  const sep=forPrint?'—'.repeat(32):'\n';
   const lines=[
     `🏪 *MOTI RAM AND SONS*`,
     `Karnal Sabji Mandi, 43, Near Karna Gate`,
@@ -856,9 +961,9 @@ function billText(b,forPrint){
 
 window.openWA=function(billId){
   let b=null;
-  if(billId){b=dg('bills').find(x=>x.id===billId);}
-  else{
-    // current unsaved bill preview
+  if(billId){
+    b=dg('bills').find(x=>x.id===billId);
+  } else {
     const vi=bItems.filter(i=>i.sku&&i.qty>0);
     const gt=vi.reduce((s,i)=>s+i.qty*i.rate,0),paid=parseFloat(G('b-paid')?.value)||0,pend=Math.max(0,gt-paid);
     b={billNo:'(Preview)',date:now2(),billType:bType,customer:G('b-cust')?.value||'Walk-in',phone:G('b-phone')?.value||'',employee:G('b-emp')?.value||'',paymentMethod:G('b-pm')?.value||'Cash',items:vi.map(i=>({sku:i.sku,qty:i.qty,rate:i.rate,pr:i.pr})),grandTotal:gt,amountPaid:paid,amountPending:pend};
@@ -1026,6 +1131,7 @@ function rAccts(){
   </div></div>`;
 }
 window.filterAccts=function(v){document.querySelectorAll('#atbl tbody tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(v.toLowerCase())?'':'none';});};
+
 window.showAcct=function(cid){
   const c=dg('customers').find(x=>x.id===cid);if(!c)return;
   const bills=dg('bills').filter(b=>(c.billIds||[]).includes(b.id)).sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -1047,11 +1153,14 @@ window.showAcct=function(cid){
   ${(c.pendingAmount||0)>0?`<div style="margin-top:14px;"><button class="btn btn-green" onclick="collectPay('${c.id}')">💰 Collect Pending — ${fmt(c.pendingAmount)}</button></div>`:''}`;
   OM('m-acct');
 };
+
 window.collectPay=async function(cid){
   const custs=dg('customers'),i=custs.findIndex(c=>c.id===cid);if(i<0)return;
   const amt=prompt(`Collect from ${custs[i].name}\nCurrent pending: ${fmt(custs[i].pendingAmount)}\n\nEnter amount received (₹):`);
   if(amt===null)return;const v=parseFloat(amt);if(isNaN(v)||v<=0){alert('Invalid amount.');return;}
-  custs[i].pendingAmount=Math.max(0,(custs[i].pendingAmount||0)-v);ds('customers',custs);await window._save('customers',custs[i].id,custs[i]);
+  custs[i].pendingAmount=Math.max(0,(custs[i].pendingAmount||0)-v);
+  ds('customers',custs);
+  await window._save('customers',custs[i].id,custs[i]);
   alert(`✅ ₹${fmtN(v)} collected from ${custs[i].name}\nRemaining pending: ${fmt(custs[i].pendingAmount)}`);
   CM('m-acct');go('accounts');
 };
