@@ -558,6 +558,7 @@ const FIREBASE_CONFIG = {
   storageBucket:     "our-shop-62854.firebasestorage.app",
   messagingSenderId: "965176408015",
   appId:             "1:965176408015:web:25545840a1a5fda3da44ba"
+
 };
 // ════════════════════════════════════════════════════
 
@@ -787,7 +788,7 @@ document.addEventListener('mousedown',e=>{
   if(!e.target.closest('.ac-wrap')) closeAllDrops();
 });
 
-/* SKU autocomplete — shows live stock from localStorage */
+/* SKU autocomplete — passes product ID directly, no name re-lookup needed */
 function acSKU(inId,dropId,q,rowIdx){
   const prods=dg('products');
   const query=(q||'').trim().toLowerCase();
@@ -795,11 +796,11 @@ function acSKU(inId,dropId,q,rowIdx){
     ? prods.slice(0,16)
     : prods.filter(p=>p.name.toLowerCase().includes(query));
   if(!matches.length){openDrop(dropId,'');return;}
-  // FIX: rowIdx passed as actual number or null — not stringified
-  const ridx = rowIdx===null||rowIdx===undefined ? 'null' : parseInt(rowIdx,10);
+  const ridx = (rowIdx===null||rowIdx===undefined) ? 'null' : parseInt(rowIdx,10);
   const html=matches.map(p=>{
     const stockColor=sf(p.currentStock)<=0?'var(--red)':sf(p.currentStock)<=sf(p.totalPurchased)*.1?'var(--orange)':'var(--green)';
-    return`<div class="ac-item" onmousedown="pickSKU('${inId}','${dropId}',${JSON.stringify(p.name)},${ridx})">
+    // Pass product ID directly — avoids name casing/whitespace mismatch bugs
+    return`<div class="ac-item" onmousedown="pickSKU('${inId}','${dropId}',${JSON.stringify(p.id)},${JSON.stringify(p.name)},${ridx})">
       ${hl(p.name,query)}
       <div class="ac-sub">
         Stock: <span style="color:${stockColor};font-weight:600;">${fmtQ(p.currentStock)} ${p.unit||''}</span>
@@ -812,14 +813,17 @@ function acSKU(inId,dropId,q,rowIdx){
   openDrop(dropId,html);
 }
 
-window.pickSKU=function(inId,dropId,name,rowIdx){
-  SV(inId,name);
+window.pickSKU=function(inId,dropId,prodId,name,rowIdx){
+  // Look up by ID first (guaranteed match), fall back to name trim
+  const prods=dg('products');
+  const p=prods.find(x=>x.id===prodId) || prods.find(x=>x.name.trim().toLowerCase()===name.trim().toLowerCase());
+  const displayName = p ? p.name : name; // use stored name (correct casing/spacing)
+  SV(inId,displayName);
   closeAllDrops();
   if(rowIdx!==null && rowIdx!==undefined && rowIdx!=='null'){
-    setBISku(parseInt(rowIdx,10), name);
+    setBISkuById(parseInt(rowIdx,10), p, displayName);
   }else{
     // Purchase form fill
-    const p=dg('products').find(x=>x.name.toLowerCase()===name.toLowerCase());
     if(p){
       SV('p-cat',p.category||'');
       SV('p-unit',p.unit||'');
@@ -1204,8 +1208,9 @@ function renderBI(){
     const mg=pr>0?(((rate-pr)/pr)*100).toFixed(1)+'%':'—';
     const mc=rate>=pr?'var(--green)':'var(--red)';
     const did=`acd${i}`;
-    // Stock warning
-    const prod=it.sku?prods.find(p=>p.name.toLowerCase()===it.sku.toLowerCase()):null;
+    // Stock warning — trim both sides before comparing
+    const sku=(it.sku||'').trim().toLowerCase();
+    const prod=sku?prods.find(p=>p.name.trim().toLowerCase()===sku):null;
     const availStock=prod?sf(prod.currentStock):null;
     const stockWarn=availStock!==null&&availStock<qty
       ?`<span class="stock-warn">⚠️ Only ${fmtQ(availStock)} in stock</span>`:
@@ -1235,11 +1240,11 @@ function renderBI(){
   calcBT();
 }
 
-// FIX: setBISku always reads fresh products — stock added after app opened is visible immediately
-window.setBISku=function(i,val){
-  const prods=dg('products');
-  const p=prods.find(x=>x.name.toLowerCase()===val.toLowerCase());
-  bItems[i].sku=val;
+// setBISkuById — takes the actual product object already fetched, no re-lookup needed
+// Also keep setBISku as name-based fallback for scanAddToBill / catalogue paths
+function setBISkuById(i, p, displayName){
+  if(i<0||i>=bItems.length) return;
+  bItems[i].sku = displayName;
   if(p){
     bItems[i].rate = bType==='retail' ? sf(p.retailRate) : sf(p.wholesaleRate);
     bItems[i].pr   = sf(p.purchaseRate);
@@ -1248,13 +1253,23 @@ window.setBISku=function(i,val){
   }
   closeAllDrops();
   renderBI();
+}
+
+window.setBISku=function(i, val){
+  // Name-based lookup — used by barcode scanner and catalogue quick-bill
+  const prods=dg('products');
+  const p = prods.find(x=>x.name.trim().toLowerCase()===val.trim().toLowerCase())
+         || prods.find(x=>x.name.trim().toLowerCase().includes(val.trim().toLowerCase()));
+  setBISkuById(i, p, p ? p.name : val);
 };
 
 window.setBIQ=function(i,v){
   bItems[i].qty=sf(v)||0.01;
   const prods=dg('products');
-  const p=prods.find(x=>x.name.toLowerCase()===bItems[i].sku.toLowerCase());
-  // Auto-discount hint for bulk retail (qty ≥ 10): 5% off
+  // Match by trimmed lowercase — quantity change doesn't need perfect ID match
+  const sku=(bItems[i].sku||'').trim().toLowerCase();
+  const p=prods.find(x=>x.name.trim().toLowerCase()===sku);
+  // Auto-discount hint for bulk retail (qty ≥ 10): 5% off retail rate
   if(p&&bType==='retail'&&bItems[i].qty>=10&&sf(bItems[i].rate)===sf(p.retailRate)){
     bItems[i].rate=parseFloat((sf(p.retailRate)*.95).toFixed(2));
   }
@@ -1340,11 +1355,12 @@ window.saveBill=async function(){
   const bills=dg('bills'); bills.push(bill); ds('bills',bills);
   await window._save('bills',bill.id,bill);
 
-  // FIX: Deduct stock — parse currentStock safely, only save modified products
+  // Deduct stock — trim both sides before comparing to avoid whitespace mismatch
   const prods=dg('products');
   const modifiedIds=new Set();
   vi.forEach(it=>{
-    const idx=prods.findIndex(p=>p.name.toLowerCase()===it.sku.toLowerCase());
+    const skuKey=(it.sku||'').trim().toLowerCase();
+    const idx=prods.findIndex(p=>p.name.trim().toLowerCase()===skuKey);
     if(idx>=0){
       prods[idx].currentStock=Math.max(0, sf(prods[idx].currentStock)-sf(it.qty));
       modifiedIds.add(prods[idx].id);
