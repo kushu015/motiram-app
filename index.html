@@ -191,6 +191,13 @@ tr:last-child td{border-bottom:none;}
 .ff-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;}
 .ff-desc{font-size:11px;color:var(--text3);line-height:1.5;}
 .ff-badge{position:absolute;top:10px;right:10px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;font-size:9px;padding:2px 7px;color:var(--text3);}
+
+/* Catalogue */
+.cat-filter.active{background:var(--gold)!important;color:#1a0e00!important;border-color:var(--gold)!important;}
+.cat-item:hover{box-shadow:0 0 0 1px var(--gold);}
+
+/* Scanner */
+#scan-video{display:block;}
 </style>
 </head>
 <body>
@@ -239,8 +246,10 @@ tr:last-child td{border-bottom:none;}
       <div class="nav-item" onclick="go('stock')" id="nav-stock"><span class="nav-icon">🗃️</span>Stock</div>
       <div class="nav-item" onclick="go('sales')" id="nav-sales"><span class="nav-icon">📈</span>Sales & Reports</div>
       <div class="nav-item" onclick="go('accounts')" id="nav-accounts"><span class="nav-icon">👥</span>Account Holders</div>
-      <div class="nav-section">More</div>
-      <div class="nav-item" onclick="go('future')" id="nav-future"><span class="nav-icon">🚀</span>Upcoming Features</div>
+      <div class="nav-item" onclick="go('suppliers')" id="nav-suppliers"><span class="nav-icon">🤝</span>Supplier Ledger</div>
+      <div class="nav-section">Tools</div>
+      <div class="nav-item" onclick="go('barcode')" id="nav-barcode"><span class="nav-icon">📱</span>Barcode Scanner</div>
+      <div class="nav-item" onclick="go('catalogue')" id="nav-catalogue"><span class="nav-icon">🌐</span>Online Catalogue</div>
     </nav>
     <div class="sidebar-footer">
       <div id="clk" class="mono" style="font-size:11px;color:var(--gold);"></div>
@@ -514,6 +523,25 @@ tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+<!-- Supplier Payment Modal -->
+<div class="modal-bg" id="m-supp-pay">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-title"><span>💸 Record Payment to Supplier</span><span class="modal-close" onclick="CM('m-supp-pay')">✕</span></div>
+    <div id="supp-pay-info" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;"></div>
+    <div class="form-grid" style="gap:10px;">
+      <div class="fg"><label class="form-label">Amount Paid (₹) *</label><input class="fi mono" id="sp-amt" type="number" min="0.01" step="0.01" placeholder="5000"></div>
+      <div class="fg"><label class="form-label">Payment Method</label>
+        <select class="fs" id="sp-method"><option>Cash</option><option>UPI / PhonePe / GPay</option><option>Bank Transfer (NEFT/IMPS)</option><option>Cheque</option></select>
+      </div>
+      <div class="fg"><label class="form-label">Note (optional)</label><input class="fi" id="sp-note" placeholder="e.g. Part payment for Oct order"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="btn btn-sec" onclick="CM('m-supp-pay')">Cancel</button>
+      <button class="btn btn-gold" onclick="saveSupplierPayment()">💾 Save Payment</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ FIREBASE MODULE ══ -->
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -581,7 +609,7 @@ try{
     setSS('busy','Loading data…');
 
     let loadCount = 0;
-    const COLS = ['products','purchases','bills','customers'];
+    const COLS = ['products','purchases','bills','customers','suppliers'];
 
     COLS.forEach(col=>{
       onSnapshot(collection(db,col), snap=>{
@@ -878,6 +906,8 @@ function go(pg,silent){
     closeSidebar();
   }
   const mc=G('MC'); if(!mc) return;
+  // Stop camera if leaving barcode page
+  if(pg!=='barcode' && _scanActive) stopScan();
   switch(pg){
     case'dashboard':  mc.innerHTML=rDash(); break;
     case'purchasing': mc.innerHTML=rPurch(); break;
@@ -885,7 +915,9 @@ function go(pg,silent){
     case'stock':      mc.innerHTML=rStock(); break;
     case'sales':      mc.innerHTML=rSales(); setTimeout(genRep,50); break;
     case'accounts':   mc.innerHTML=rAccts(); break;
-    case'future':     mc.innerHTML=rFuture(); break;
+    case'suppliers':  mc.innerHTML=rSuppliers(); break;
+    case'barcode':    mc.innerHTML=rBarcode(); break;
+    case'catalogue':  mc.innerHTML=rCatalogue(); break;
   }
   if(pg==='billing') refreshEmpList();
 }
@@ -1790,39 +1822,519 @@ window.collectPay=async function(cid){
 };
 
 /* ════════════════════════════════════════════════════
-   UPCOMING FEATURES
+   SUPPLIER LEDGER
 ════════════════════════════════════════════════════ */
-function rFuture(){
-  const features=[
-    {icon:'📊',title:'Daily / Weekly P&L Report',desc:'Automatic profit & loss summary — sales, expenses, and net profit at a glance.',tag:'Suggested'},
-    {icon:'📱',title:'Barcode / QR Scanner',desc:'Scan product barcodes using phone camera to quickly add items to a bill or update stock.',tag:'Suggested'},
-    {icon:'💸',title:'Expense Tracking',desc:'Record shop expenses like rent, electricity, transport, and salaries. See true net profit.',tag:'Suggested'},
-    {icon:'🔔',title:'Low Stock Alerts',desc:'WhatsApp/SMS notification when any product falls below your set threshold.',tag:'Suggested'},
-    {icon:'🏷️',title:'Multi-Price Tiers',desc:'Set different prices for different customer groups — dealer price, walk-in price, etc.',tag:'Suggested'},
-    {icon:'📅',title:'Credit Due Date & Reminders',desc:'Set payment due dates for credit customers. Auto-reminder sent on WhatsApp.',tag:'Suggested'},
-    {icon:'📤',title:'Export to Excel / PDF',desc:'Download sales reports, stock lists, or ledgers as Excel or PDF files.',tag:'Suggested'},
-    {icon:'🧮',title:'GST Invoice Support',desc:'GST-compliant invoices with GSTIN, HSN codes, CGST/SGST breakdown.',tag:'Suggested'},
-    {icon:'🤝',title:'Supplier Ledger',desc:'Track what you owe to each distributor — purchase history, payments, outstanding balance.',tag:'Suggested'},
-    {icon:'👨‍💼',title:'Staff & Attendance',desc:'Track employee attendance, shifts, calculate salary based on days worked.',tag:'Suggested'},
-    {icon:'📦',title:'Purchase Orders',desc:'Create and send purchase orders to distributors via WhatsApp or email.',tag:'Future'},
-    {icon:'🌐',title:'Online Shop / Catalogue',desc:'Share a digital product catalogue or take orders from regular customers.',tag:'Future'},
-  ];
+function rSuppliers(){
+  // Build supplier summary from purchases + manual payments
+  const purchases = dg('purchases');
+  const payments  = dg('suppliers'); // supplier payments stored separately
+
+  // Aggregate per distributor
+  const suppMap = {};
+  purchases.forEach(p=>{
+    const name = (p.distributor||'Unknown').trim();
+    if(!suppMap[name]) suppMap[name]={name, contact:p.distContact||'', totalPurchased:0, totalPaid:0, purchases:[], payments:[]};
+    suppMap[name].totalPurchased += sf(p.qty)*sf(p.purchaseRate);
+    suppMap[name].purchases.push(p);
+    if(p.distContact) suppMap[name].contact=p.distContact;
+  });
+  payments.forEach(pay=>{
+    const name=(pay.supplier||'').trim();
+    if(!suppMap[name]) suppMap[name]={name,contact:'',totalPurchased:0,totalPaid:0,purchases:[],payments:[]};
+    suppMap[name].totalPaid += sf(pay.amount);
+    suppMap[name].payments.push(pay);
+  });
+
+  const supps = Object.values(suppMap).sort((a,b)=>(b.totalPurchased-b.totalPaid)-(a.totalPurchased-a.totalPaid));
+  const totalOwed = supps.reduce((s,x)=>s+Math.max(0,x.totalPurchased-x.totalPaid),0);
+  const totalBought = supps.reduce((s,x)=>s+x.totalPurchased,0);
+
   return`<div class="page-header">
-    <div><div class="page-title">🚀 Upcoming Features</div><div class="page-sub">Planned upgrades — tell us which you want first!</div></div>
+    <div><div class="page-title">🤝 Supplier Ledger</div><div class="page-sub">Track what you owe each distributor</div></div>
   </div>
   <div class="page-content">
-  <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:16px;margin-bottom:20px;font-size:13px;line-height:1.7;color:var(--text2);">
-    💡 <b style="color:var(--text);">Your feedback shapes this software.</b> If you want any of these — or have your own idea — just let us know!
+  <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+    <div class="stat-card"><div class="stat-label">Total Purchased</div><div class="stat-value gold">${fmt(totalBought)}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Paid</div><div class="stat-value green">${fmt(supps.reduce((s,x)=>s+x.totalPaid,0))}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Outstanding</div><div class="stat-value red">${fmt(totalOwed)}</div></div>
   </div>
-  <div class="ff-grid">
-  ${features.map(f=>`<div class="ff-card">
-    <div class="ff-badge">${f.tag}</div>
-    <div class="ff-icon">${f.icon}</div>
-    <div class="ff-title">${f.title}</div>
-    <div class="ff-desc">${f.desc}</div>
-  </div>`).join('')}
+  <div class="search-bar"><span style="color:var(--text3);">🔍</span><input placeholder="Search supplier…" oninput="filterSupp(this.value)"></div>
+  <div class="card">
+  ${supps.length===0
+    ?'<div class="empty-state"><div class="ei">🤝</div><p>No suppliers yet. They appear automatically once you record purchases.</p></div>'
+    :`<div class="tbl-wrap"><table id="stbl-s">
+      <thead><tr><th>Supplier</th><th>Contact</th><th>Total Purchased</th><th>Total Paid</th><th>Outstanding</th><th>Last Purchase</th><th></th></tr></thead>
+      <tbody>
+      ${supps.map(s=>{
+        const owed=Math.max(0,s.totalPurchased-s.totalPaid);
+        const lastP=s.purchases.sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+        return`<tr>
+          <td style="font-weight:600;">${s.name}</td>
+          <td class="mono" style="font-size:12px;">${s.contact||'—'}</td>
+          <td class="mono tgold">${fmt(s.totalPurchased)}</td>
+          <td class="mono tgreen">${fmt(s.totalPaid)}</td>
+          <td class="mono ${owed>0?'tred':''}" style="font-weight:${owed>0?700:400};">${fmt(owed)}</td>
+          <td style="font-size:11px;color:var(--text3);">${lastP?fmtD(lastP.date):'—'}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn btn-sec btn-sm" onclick="showSupplier(${JSON.stringify(s.name)})">View</button>
+            ${owed>0?`<button class="btn btn-green btn-sm" onclick="openSuppPay(${JSON.stringify(s.name)})" style="margin-left:4px;">Pay</button>`:''}
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody></table></div>`}
   </div></div>`;
 }
+
+window.filterSupp=function(v){
+  const safe=v.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),re=new RegExp(safe,'i');
+  document.querySelectorAll('#stbl-s tbody tr').forEach(r=>{r.style.display=re.test(r.textContent)?'':'none';});
+};
+
+window.showSupplier=function(name){
+  const purchases=dg('purchases').filter(p=>(p.distributor||'').trim()===name).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const payments=dg('suppliers').filter(p=>(p.supplier||'').trim()===name).sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalBought=purchases.reduce((s,p)=>s+sf(p.qty)*sf(p.purchaseRate),0);
+  const totalPaid=payments.reduce((s,p)=>s+sf(p.amount),0);
+  const owed=Math.max(0,totalBought-totalPaid);
+  const contact=purchases.find(p=>p.distContact)?.distContact||'—';
+
+  // Use bill detail modal repurposed
+  G('bd-title').textContent=`🤝 ${name}`;
+  G('bd-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div class="stat-card"><div class="stat-label">Total Purchased</div><div class="stat-value gold">${fmt(totalBought)}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Paid</div><div class="stat-value green">${fmt(totalPaid)}</div></div>
+      <div class="stat-card"><div class="stat-label">Outstanding</div><div class="stat-value red">${fmt(owed)}</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;">📞 ${contact}</div>
+    <div class="section-label">Purchase History</div>
+    <div class="tbl-wrap" style="margin-bottom:14px;">
+      <table><thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Rate</th><th>Total</th></tr></thead><tbody>
+      ${purchases.length===0?'<tr><td colspan="5" style="text-align:center;color:var(--text3);">No purchases</td></tr>':
+        purchases.map(p=>`<tr>
+          <td style="font-size:11px;color:var(--text3);">${fmtD(p.date)}</td>
+          <td style="font-weight:600;">${p.name}</td>
+          <td class="mono">${fmtQ(p.qty)} ${p.unit||''}</td>
+          <td class="mono">${fmt(p.purchaseRate)}</td>
+          <td class="mono tgold">${fmt(sf(p.qty)*sf(p.purchaseRate))}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="section-label">Payment History</div>
+    <div class="tbl-wrap">
+      <table><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Note</th></tr></thead><tbody>
+      ${payments.length===0?'<tr><td colspan="4" style="text-align:center;color:var(--text3);">No payments recorded yet</td></tr>':
+        payments.map(p=>`<tr>
+          <td style="font-size:11px;color:var(--text3);">${fmtD(p.date)}</td>
+          <td class="mono tgreen">${fmt(p.amount)}</td>
+          <td style="font-size:11px;">${p.method||'—'}</td>
+          <td style="font-size:11px;color:var(--text3);">${p.note||''}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+    ${owed>0?`<div style="margin-top:14px;"><button class="btn btn-green" onclick="CM('m-bill-detail');openSuppPay(${JSON.stringify(name)})">💰 Record Payment — ${fmt(owed)} outstanding</button></div>`:''}
+  `;
+  G('bd-wa-btn').style.display='none';
+  G('bd-print-btn').style.display='none';
+  OM('m-bill-detail');
+};
+
+// Restore bill detail buttons when used for bills
+window.showBillDetail=function(bid){
+  G('bd-wa-btn').style.display='';
+  G('bd-print-btn').style.display='';
+  const b=dg('bills').find(x=>x.id===bid);
+  if(!b) return;
+  G('bd-title').textContent=`🧾 Bill #${b.billNo} — ${b.billType.toUpperCase()}`;
+  const disc=sf(b.discount);
+  G('bd-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+      <div class="stat-card"><div class="stat-label">Customer</div><div style="font-size:13px;font-weight:700;margin-top:4px;">${b.customer||'Walk-in'}</div>${b.phone?`<div style="font-size:11px;color:var(--text3);">📞 ${b.phone}</div>`:''}</div>
+      <div class="stat-card"><div class="stat-label">Date & Employee</div><div style="font-size:12px;margin-top:4px;">${fmtD(b.date)}</div><div style="font-size:11px;color:var(--text3);">${b.employee?'👤 '+b.employee:'—'}</div></div>
+    </div>
+    <div class="section-label">Items Purchased</div>
+    <div class="tbl-wrap" style="margin-bottom:14px;">
+      <table><thead><tr><th>#</th><th>Product</th><th style="text-align:right;">Qty</th><th style="text-align:right;">Rate</th><th style="text-align:right;">Amount</th></tr></thead>
+      <tbody>${(b.items||[]).map((it,n)=>`<tr>
+        <td style="color:var(--text3);">${n+1}</td>
+        <td style="font-weight:600;">${it.sku}</td>
+        <td class="mono" style="text-align:right;color:var(--gold2);">${fmtQ(it.qty)}</td>
+        <td class="mono" style="text-align:right;">${fmt(it.rate)}</td>
+        <td class="mono" style="text-align:right;font-weight:600;">${fmt(sf(it.qty)*sf(it.rate))}</td>
+      </tr>`).join('')}</tbody>
+      </table>
+    </div>
+    <div class="bill-totals-box">
+      <div class="btr"><span>Subtotal</span><span class="mono">${fmt(sf(b.grandTotal)+disc)}</span></div>
+      ${disc>0?`<div class="btr disc"><span>Discount</span><span class="mono">— ${fmt(disc)}</span></div>`:''}
+      <div class="btr grand"><span>Grand Total</span><span class="mono">${fmt(b.grandTotal)}</span></div>
+      <div class="btr" style="color:var(--green);"><span>Paid (${b.paymentMethod||'—'})</span><span class="mono">${fmt(b.amountPaid)}</span></div>
+      ${sf(b.amountPending)>0?`<div class="btr" style="color:var(--red);font-weight:700;"><span>Pending</span><span class="mono">${fmt(b.amountPending)}</span></div>`:''}
+      <div class="btr profit"><span>Profit</span><span class="mono">${fmt(b.profit)}</span></div>
+    </div>`;
+  G('bd-wa-btn').onclick=()=>{ CM('m-bill-detail'); prepWA(bid); };
+  G('bd-print-btn').onclick=()=>printBillById(bid);
+  OM('m-bill-detail');
+};
+
+let _suppPayName='';
+window.openSuppPay=function(name){
+  _suppPayName=name;
+  const purchases=dg('purchases').filter(p=>(p.distributor||'').trim()===name);
+  const payments=dg('suppliers').filter(p=>(p.supplier||'').trim()===name);
+  const totalBought=purchases.reduce((s,p)=>s+sf(p.qty)*sf(p.purchaseRate),0);
+  const totalPaid=payments.reduce((s,p)=>s+sf(p.amount),0);
+  const owed=Math.max(0,totalBought-totalPaid);
+  G('supp-pay-info').innerHTML=`<b style="font-size:15px;">${name}</b><br>
+    <span style="color:var(--text3);">Total purchased: ${fmt(totalBought)} &nbsp;·&nbsp; Paid: ${fmt(totalPaid)}</span><br>
+    <span style="color:var(--red);font-weight:700;">Outstanding: ${fmt(owed)}</span>`;
+  SV('sp-amt',''); SV('sp-note','');
+  OM('m-supp-pay');
+};
+
+window.saveSupplierPayment=async function(){
+  const amt=sf(G('sp-amt')?.value);
+  if(amt<=0){alert('Enter a valid amount.');return;}
+  const method=G('sp-method')?.value||'Cash';
+  const note=(G('sp-note')?.value||'').trim();
+  const pay={id:uid(),date:now2(),supplier:_suppPayName,amount:amt,method,note};
+  const payments=dg('suppliers'); payments.push(pay); ds('suppliers',payments);
+  await window._save('suppliers',pay.id,pay);
+  CM('m-supp-pay');
+  alert(`✅ Payment of ${fmt(amt)} recorded for ${_suppPayName}`);
+  go('suppliers');
+};
+
+/* ════════════════════════════════════════════════════
+   BARCODE SCANNER
+════════════════════════════════════════════════════ */
+let _scanMode='billing'; // 'billing' or 'stock'
+let _scanStream=null;
+let _scanActive=false;
+
+function rBarcode(){
+  return`<div class="page-header">
+    <div><div class="page-title">📱 Barcode Scanner</div><div class="page-sub">Scan product barcodes using your camera to add items to a bill or look up stock</div></div>
+  </div>
+  <div class="page-content">
+  <div class="card" style="max-width:500px;margin:0 auto;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div onclick="setScanMode('billing')" id="sm-billing" style="background:var(--gold);color:#1a0e00;border-radius:8px;padding:14px;text-align:center;cursor:pointer;font-weight:700;font-size:13px;">🧾 Scan for Bill</div>
+      <div onclick="setScanMode('stock')" id="sm-stock" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:8px;padding:14px;text-align:center;cursor:pointer;font-weight:700;font-size:13px;">🗃️ Look Up Stock</div>
+    </div>
+
+    <div id="scan-video-wrap" style="position:relative;background:#000;border-radius:10px;overflow:hidden;aspect-ratio:4/3;margin-bottom:14px;">
+      <video id="scan-video" style="width:100%;height:100%;object-fit:cover;" playsinline muted></video>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+        <div style="border:2px solid var(--gold);border-radius:8px;width:70%;height:40%;opacity:0.7;"></div>
+      </div>
+      <div id="scan-overlay" style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);">Align barcode inside the box</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <button class="btn btn-gold" style="flex:1;" onclick="startScan()" id="scan-start-btn">📷 Start Camera</button>
+      <button class="btn btn-sec" onclick="stopScan()" id="scan-stop-btn" style="display:none;">⏹ Stop</button>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div class="section-label">Or enter barcode manually</div>
+      <div style="display:flex;gap:8px;">
+        <input class="fi" id="manual-barcode" placeholder="Enter barcode / product name…" style="flex:1;"
+          onkeydown="if(event.key==='Enter')scanLookup(this.value)">
+        <button class="btn btn-sec" onclick="scanLookup(G('manual-barcode').value)">Search</button>
+      </div>
+    </div>
+
+    <div id="scan-result" style="display:none;background:var(--bg3);border-radius:10px;padding:16px;"></div>
+  </div></div>`;
+}
+
+window.setScanMode=function(mode){
+  _scanMode=mode;
+  const b=G('sm-billing'),s=G('sm-stock');
+  if(!b||!s) return;
+  if(mode==='billing'){
+    b.style.background='var(--gold)';b.style.color='#1a0e00';b.style.border='none';
+    s.style.background='var(--bg3)';s.style.color='var(--text2)';s.style.border='1px solid var(--border2)';
+  }else{
+    s.style.background='var(--gold)';s.style.color='#1a0e00';s.style.border='none';
+    b.style.background='var(--bg3)';b.style.color='var(--text2)';b.style.border='1px solid var(--border2)';
+  }
+};
+
+window.startScan=async function(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    alert('Camera not supported on this device/browser. Please use the manual search below.');return;
+  }
+  try{
+    _scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
+    const vid=G('scan-video');
+    vid.srcObject=_scanStream;
+    await vid.play();
+    G('scan-start-btn').style.display='none';
+    G('scan-stop-btn').style.display='';
+    G('scan-overlay').textContent='Align barcode inside the box';
+    _scanActive=true;
+
+    // Use BarcodeDetector API if available (Chrome Android / modern browsers)
+    if('BarcodeDetector' in window){
+      const bd=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','upc_a','upc_e','qr_code']});
+      const detect=async()=>{
+        if(!_scanActive) return;
+        try{
+          const barcodes=await bd.detect(vid);
+          if(barcodes.length>0){
+            const val=barcodes[0].rawValue;
+            G('scan-overlay').textContent='✅ Detected: '+val;
+            scanLookup(val);
+            return; // stop loop after hit
+          }
+        }catch(e){}
+        requestAnimationFrame(detect);
+      };
+      detect();
+    }else{
+      // Fallback — ZXing via CDN for browsers without BarcodeDetector
+      G('scan-overlay').textContent='Camera ready — use manual entry below for best results';
+      alert('Tip: Your browser doesn\'t support live barcode scanning. Use the manual entry field below — type the barcode number or product name.');
+    }
+  }catch(e){
+    alert('Camera access denied or not available. Please allow camera permissions or use manual search.');
+    console.error(e);
+  }
+};
+
+window.stopScan=function(){
+  _scanActive=false;
+  if(_scanStream){ _scanStream.getTracks().forEach(t=>t.stop()); _scanStream=null; }
+  const vid=G('scan-video'); if(vid){ vid.srcObject=null; }
+  G('scan-start-btn').style.display='';
+  G('scan-stop-btn').style.display='none';
+};
+
+window.scanLookup=function(val){
+  val=(val||'').trim();
+  if(!val) return;
+  stopScan();
+
+  // Search products by name or barcode field
+  const prods=dg('products');
+  const p=prods.find(x=>
+    x.name.toLowerCase()===val.toLowerCase()||
+    (x.barcode&&x.barcode===val)||
+    x.name.toLowerCase().includes(val.toLowerCase())
+  );
+
+  const res=G('scan-result');
+  if(!res) return;
+  res.style.display='block';
+
+  if(!p){
+    res.innerHTML=`<div style="text-align:center;color:var(--text3);">
+      <div style="font-size:24px;margin-bottom:8px;">🔍</div>
+      <div style="font-weight:600;margin-bottom:4px;">No product found for "<span style="color:var(--gold2);">${val}</span>"</div>
+      <div style="font-size:12px;margin-bottom:12px;">This barcode is not linked to any product in your inventory.</div>
+      <button class="btn btn-gold btn-sm" onclick="go('purchasing');setTimeout(()=>{OM('m-purch');resetPF();G('p-name').value=${JSON.stringify(val)};},80)">+ Add as New Product</button>
+    </div>`;
+    return;
+  }
+
+  const stockColor=sf(p.currentStock)<=0?'var(--red)':sf(p.currentStock)<=sf(p.totalPurchased)*.1?'var(--orange)':'var(--green)';
+  res.innerHTML=`
+    <div style="font-size:15px;font-weight:800;margin-bottom:8px;">✅ ${p.name}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+      <div class="stat-card" style="padding:10px;"><div class="stat-label">In Stock</div><div style="font-size:16px;font-weight:700;color:${stockColor};">${fmtQ(p.currentStock)} ${p.unit||''}</div></div>
+      <div class="stat-card" style="padding:10px;"><div class="stat-label">Retail Rate</div><div style="font-size:14px;font-weight:700;color:var(--green);">${fmt(p.retailRate)}</div></div>
+      <div class="stat-card" style="padding:10px;"><div class="stat-label">WS Rate</div><div style="font-size:14px;font-weight:700;color:var(--gold2);">${fmt(p.wholesaleRate)}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-gold" onclick="scanAddToBill(${JSON.stringify(p.name)})">🧾 Add to Bill</button>
+      <button class="btn btn-sec" onclick="go('purchasing');setTimeout(()=>{OM('m-purch');resetPF();G('p-name').value=${JSON.stringify(p.name)};pickSKU('p-name','ac-pn',${JSON.stringify(p.name)},null);},80)">📦 Restock</button>
+      <button class="btn btn-sec" onclick="G('scan-result').style.display='none';G('manual-barcode').value='';">✕ Clear</button>
+    </div>`;
+};
+
+window.scanAddToBill=function(productName){
+  // Navigate to billing, open new bill type chooser with product pre-filled
+  _pendingScanProduct=productName;
+  go('billing');
+  setTimeout(()=>OM('m-btype'),50);
+};
+let _pendingScanProduct=null;
+
+// Override startBill to pick up pending scan product
+const _origStartBill=window.startBill;
+window.startBill=function(type){
+  _origStartBill(type);
+  if(_pendingScanProduct){
+    const name=_pendingScanProduct; _pendingScanProduct=null;
+    setTimeout(()=>{
+      // Add extra row and fill it
+      const i=bItems.length-1;
+      setBISku(i,name);
+      const inp=G('bsi'+i); if(inp){ inp.value=name; }
+    },100);
+  }
+};
+
+/* ════════════════════════════════════════════════════
+   ONLINE CATALOGUE
+════════════════════════════════════════════════════ */
+function rCatalogue(){
+  const prods=dg('products').filter(p=>sf(p.currentStock)>0).sort((a,b)=>a.name.localeCompare(b.name));
+  const cats=[...new Set(prods.map(p=>p.category||'Other'))].sort();
+  const shareUrl=window.location.href.split('?')[0]+'?view=catalogue';
+
+  return`<div class="page-header">
+    <div><div class="page-title">🌐 Online Catalogue</div><div class="page-sub">Share your live product catalogue with customers via WhatsApp</div></div>
+    <div class="header-actions">
+      <button class="btn btn-sec" onclick="shareCatalogue()">📱 Share via WhatsApp</button>
+      <button class="btn btn-gold" onclick="printCatalogue()">🖨️ Print Catalogue</button>
+    </div>
+  </div>
+  <div class="page-content">
+
+  <div class="card" style="margin-bottom:14px;">
+    <div style="font-size:12px;font-weight:700;margin-bottom:10px;">📋 Share Options</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-green btn-sm" onclick="shareCatalogue()">📱 WhatsApp Text Catalogue</button>
+      <button class="btn btn-sec btn-sm" onclick="copyWACatalogue()">📋 Copy Catalogue Text</button>
+      <button class="btn btn-sec btn-sm" onclick="printCatalogue()">🖨️ Print / Save as PDF</button>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text3);">
+      💡 Tip: Share the WhatsApp text catalogue with customers so they can see your available products and current prices. Items with zero stock are hidden automatically.
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+    <button class="btn btn-sec btn-sm cat-filter active" onclick="filterCat('all',this)">All (${prods.length})</button>
+    ${cats.map(c=>`<button class="btn btn-sec btn-sm cat-filter" onclick="filterCat(${JSON.stringify(c)},this)">${c} (${prods.filter(p=>(p.category||'Other')===c).length})</button>`).join('')}
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;" id="cat-grid">
+  ${prods.length===0
+    ?`<div class="empty-state" style="grid-column:1/-1;"><div class="ei">🌐</div><p>No products in stock. Add purchases to populate the catalogue.</p></div>`
+    :prods.map(p=>`
+    <div class="card cat-item" data-cat="${p.category||'Other'}" style="padding:14px;cursor:default;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.3;flex:1;">${p.name}</div>
+        <span class="pill" style="margin-left:8px;flex-shrink:0;">${p.category||'Other'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+        <div style="background:var(--bg3);border-radius:6px;padding:8px;text-align:center;">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Retail</div>
+          <div style="font-size:14px;font-weight:700;color:var(--green);">${fmt(p.retailRate)}</div>
+          <div style="font-size:9px;color:var(--text3);">per ${p.unit||'unit'}</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;padding:8px;text-align:center;">
+          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Wholesale</div>
+          <div style="font-size:14px;font-weight:700;color:var(--gold2);">${fmt(p.wholesaleRate)}</div>
+          <div style="font-size:9px;color:var(--text3);">per ${p.unit||'unit'}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:11px;color:var(--text3);">Available: <b style="color:var(--green);">${fmtQ(p.currentStock)} ${p.unit||''}</b></span>
+        <button class="btn btn-gold btn-sm" onclick="quickBillFromCat(${JSON.stringify(p.name)})">+ Bill</button>
+      </div>
+    </div>`).join('')}
+  </div></div>`;
+}
+
+window.filterCat=function(cat,btn){
+  document.querySelectorAll('.cat-filter').forEach(b=>{b.classList.remove('active');b.style.background='';b.style.color='';});
+  btn.classList.add('active');btn.style.background='var(--gold)';btn.style.color='#1a0e00';
+  document.querySelectorAll('.cat-item').forEach(el=>{
+    el.style.display=(cat==='all'||el.dataset.cat===cat)?'':'none';
+  });
+};
+
+window.quickBillFromCat=function(productName){
+  _pendingScanProduct=productName;
+  go('billing');
+  setTimeout(()=>OM('m-btype'),50);
+};
+
+window.shareCatalogue=function(){
+  const text=buildCatalogueText();
+  const msg=encodeURIComponent(text);
+  window.open('https://wa.me/?text='+msg,'_blank');
+};
+
+window.copyWACatalogue=function(){
+  const text=buildCatalogueText();
+  navigator.clipboard.writeText(text).then(()=>alert('✅ Catalogue copied to clipboard!')).catch(()=>{
+    // Fallback
+    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    alert('✅ Catalogue copied!');
+  });
+};
+
+function buildCatalogueText(){
+  const prods=dg('products').filter(p=>sf(p.currentStock)>0).sort((a,b)=>a.name.localeCompare(b.name));
+  const cats=[...new Set(prods.map(p=>p.category||'Other'))].sort();
+  const lines=[
+    '🏪 *MOTI RAM AND SONS*',
+    'Karnal Sabji Mandi, Near Karna Gate',
+    'Ganpati Market, Old Karnal, Haryana 132001',
+    '📞 098960 79089',
+    '',
+    `📋 *PRODUCT CATALOGUE* — ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}`,
+    '',
+  ];
+  cats.forEach(cat=>{
+    const catProds=prods.filter(p=>(p.category||'Other')===cat);
+    if(!catProds.length) return;
+    lines.push(`*${cat.toUpperCase()}*`);
+    catProds.forEach(p=>{
+      lines.push(`• ${p.name} — Retail: ₹${fmtN(p.retailRate)}/${p.unit||'unit'} | WS: ₹${fmtN(p.wholesaleRate)}/${p.unit||'unit'}`);
+    });
+    lines.push('');
+  });
+  lines.push('_Prices are subject to change. Contact us to place an order._');
+  lines.push('🙏 Thank you for your business!');
+  return lines.join('\n');
+}
+
+window.printCatalogue=function(){
+  const prods=dg('products').filter(p=>sf(p.currentStock)>0).sort((a,b)=>a.name.localeCompare(b.name));
+  const cats=[...new Set(prods.map(p=>p.category||'Other'))].sort();
+  const w=window.open('','_blank');
+  if(!w){alert('Please allow popups to print.');return;}
+  w.document.write(`<!DOCTYPE html><html><head><title>Catalogue — Moti Ram And Sons</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap');
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Sora',sans-serif;padding:24px;font-size:12px;color:#111;}
+    h1{font-size:18px;font-weight:800;margin-bottom:2px;}
+    .addr{font-size:10px;color:#555;margin-bottom:12px;}
+    h2{font-size:13px;font-weight:700;background:#f5f0e0;padding:5px 8px;border-radius:4px;margin:14px 0 6px;}
+    table{width:100%;border-collapse:collapse;margin-bottom:8px;}
+    th{font-size:9px;text-transform:uppercase;color:#666;padding:4px 6px;border-bottom:1px solid #ddd;text-align:left;}
+    td{padding:5px 6px;border-bottom:1px solid #f0f0f0;font-size:11px;}
+    .price{font-weight:600;}
+    .footer{text-align:center;margin-top:20px;font-size:10px;color:#777;border-top:1px dashed #ccc;padding-top:10px;}
+    @media print{body{padding:10px;}}
+  </style></head><body>
+  <h1>🏪 Moti Ram And Sons</h1>
+  <div class="addr">Karnal Sabji Mandi, 43, Near Karna Gate, Ganpati Market, Old Karnal, Haryana 132001 &nbsp;·&nbsp; 📞 098960 79089<br>
+  <b>Product Catalogue</b> — ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}</div>
+  ${cats.map(cat=>{
+    const cp=prods.filter(p=>(p.category||'Other')===cat);
+    if(!cp.length) return '';
+    return`<h2>${cat}</h2>
+    <table><thead><tr><th>Product</th><th>Unit</th><th>Retail Price</th><th>Wholesale Price</th><th>Available</th></tr></thead>
+    <tbody>${cp.map(p=>`<tr>
+      <td><b>${p.name}</b></td><td>${p.unit||'—'}</td>
+      <td class="price">₹${fmtN(p.retailRate)}</td>
+      <td class="price">₹${fmtN(p.wholesaleRate)}</td>
+      <td>${fmtQ(p.currentStock)} ${p.unit||''}</td>
+    </tr>`).join('')}</tbody></table>`;
+  }).join('')}
+  <div class="footer">Prices subject to change. Thank you for your business! — Moti Ram And Sons, Karnal</div>
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>w.print(),400);
+};
 </script>
 </body>
 </html>
