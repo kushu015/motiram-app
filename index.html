@@ -785,11 +785,16 @@ function acKey(e,did){
   }else if(e.key==='Escape') closeAllDrops();
 }
 document.addEventListener('mousedown',e=>{
+  // Don't close if clicking inside the dropdown itself
+  if(e.target.closest('.ac-drop')) return;
   if(!e.target.closest('.ac-wrap')) closeAllDrops();
 });
 
 /* SKU autocomplete — passes product ID directly, no name re-lookup needed */
+let _picking=false; // guard: suppress oninput right after a dropdown pick
+
 function acSKU(inId,dropId,q,rowIdx){
+  if(_picking) return; // don't re-open dropdown immediately after pick
   const prods=dg('products');
   const query=(q||'').trim().toLowerCase();
   const matches=query===''
@@ -799,8 +804,7 @@ function acSKU(inId,dropId,q,rowIdx){
   const ridx = (rowIdx===null||rowIdx===undefined) ? 'null' : parseInt(rowIdx,10);
   const html=matches.map(p=>{
     const stockColor=sf(p.currentStock)<=0?'var(--red)':sf(p.currentStock)<=sf(p.totalPurchased)*.1?'var(--orange)':'var(--green)';
-    // Pass product ID directly — avoids name casing/whitespace mismatch bugs
-    return`<div class="ac-item" onmousedown="pickSKU('${inId}','${dropId}',${JSON.stringify(p.id)},${JSON.stringify(p.name)},${ridx})">
+    return`<div class="ac-item" onclick="pickSKU('${inId}','${dropId}',${JSON.stringify(p.id)},${JSON.stringify(p.name)},${ridx})">
       ${hl(p.name,query)}
       <div class="ac-sub">
         Stock: <span style="color:${stockColor};font-weight:600;">${fmtQ(p.currentStock)} ${p.unit||''}</span>
@@ -842,7 +846,7 @@ function acDist(inId,dropId,q){
   const matches=query===''?names.slice(0,10):names.filter(n=>n.toLowerCase().includes(query));
   if(!matches.length){openDrop(dropId,'');return;}
   openDrop(dropId,matches.map(n=>
-    `<div class="ac-item" onmousedown="pickDist('${inId}','${dropId}',${JSON.stringify(n)})">${hl(n,query)}</div>`
+    `<div class="ac-item" onclick="pickDist('${inId}','${dropId}',${JSON.stringify(n)})">${hl(n,query)}</div>`
   ).join(''));
 }
 window.pickDist=function(inId,dropId,name){
@@ -860,7 +864,7 @@ function acCN(inId,dropId,q){
   const matches=query===''?custs.slice(0,12):custs.filter(c=>c.name.toLowerCase().includes(query));
   if(!matches.length){openDrop(dropId,'');return;}
   openDrop(dropId,matches.map(c=>
-    `<div class="ac-item" onmousedown="pickCust('${c.id}')">
+    `<div class="ac-item" onclick="pickCust('${c.id}')">
       ${hl(c.name,query)}
       <div class="ac-sub">${c.phone}${(c.pendingAmount||0)>0?' &nbsp;·&nbsp; <span style="color:var(--red)">Pending: '+fmt(c.pendingAmount)+'</span>':''}</div>
     </div>`
@@ -874,7 +878,7 @@ function acCP(inId,dropId,q){
   const matches=query===''?custs.slice(0,12):custs.filter(c=>c.phone.includes(query));
   if(!matches.length){openDrop(dropId,'');return;}
   openDrop(dropId,matches.map(c=>
-    `<div class="ac-item" onmousedown="pickCust('${c.id}')">
+    `<div class="ac-item" onclick="pickCust('${c.id}')">
       ${hl(c.phone,query)}
       <div class="ac-sub">${c.name}${(c.pendingAmount||0)>0?' &nbsp;·&nbsp; <span style="color:var(--red)">'+fmt(c.pendingAmount)+'</span>':''}</div>
     </div>`
@@ -1191,9 +1195,10 @@ window.startBill=function(type){
   SV('b-pm','Cash');
   G('pend-box').style.display='none';
   G('disc-row').style.display='none';
-  renderBI(); calcBT(); refreshEmpList();
+  // Don't call renderBI here — addBI will do it
+  calcBT(); refreshEmpList();
   OM('m-bill');
-  addBI(); // start with one empty row
+  addBI(); // adds first empty row and calls renderBI once
 };
 
 window.addBI=function(){ bItems.push({sku:'',qty:1,rate:0,pr:0}); renderBI(); };
@@ -1241,9 +1246,9 @@ function renderBI(){
 }
 
 // setBISkuById — takes the actual product object already fetched, no re-lookup needed
-// Also keep setBISku as name-based fallback for scanAddToBill / catalogue paths
 function setBISkuById(i, p, displayName){
   if(i<0||i>=bItems.length) return;
+  _picking=true; // prevent oninput from re-opening dropdown and overwriting
   bItems[i].sku = displayName;
   if(p){
     bItems[i].rate = bType==='retail' ? sf(p.retailRate) : sf(p.wholesaleRate);
@@ -1253,6 +1258,8 @@ function setBISkuById(i, p, displayName){
   }
   closeAllDrops();
   renderBI();
+  // Clear picking flag after browser event loop settles
+  setTimeout(()=>{ _picking=false; }, 300);
 }
 
 window.setBISku=function(i, val){
